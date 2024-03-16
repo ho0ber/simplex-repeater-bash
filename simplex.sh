@@ -1,14 +1,10 @@
 #!/bin/bash
 
-#
-# New 2FA requirements on GitHub means
-# updates to this script will ONLY be on
-# Pastebin: https://pastebin.com/nGfPrdss
-
 #-------------------------------------------
 # GENERAL NOTES
 #
 #-------------------------------------------
+#
 # Fairly major improvements added as of
 # 2020-02-24 though this is still very much
 # a very crude and simple simplex repeater
@@ -41,7 +37,9 @@
 #
 # Raspberry Pi may use alsa instead of 
 # pulse. You'll have to configure things
-# with alsamixer or similar.
+# with alsamixer or similar. It does seem
+# to use pulseaudio nicely when pulse is
+# installed.
 #-------------------------------------------
 # Code by Phillip J Rhoades
 #-------------------------------------------
@@ -169,6 +167,11 @@
 # can't be reached within a certain time.
 # (2020/02/29)
 #-------------------------------------------
+# Considering a rec -t wav | play -t wav
+# pass-through option for use of this script
+# as a duplex repeater controller...
+# (2020/02/29)
+#-------------------------------------------
 
 SECONDS=1000
 DTMFCONTROLS=1
@@ -178,14 +181,16 @@ SAVERECS=0
 
 CALLSIGN="YOURCALLSIGN"
 IDLOOPING=1
-CALLSIGN_SPEAK=0
-CALLSIGN_MORSE=1
+CALLSIGN_SPEAK=1
+CALLSIGN_MORSE=0
 
 #MORSEPROG="cw"
 MORSEPROG="morse"
 
 MULTIMONPROG="multimon-ng"
 #MULTIMONPROG="multimon"
+
+TIMEOUT=120
 
 #-------------------------------------------
 # MORE "ELEGANT" EXITING
@@ -244,8 +249,8 @@ function ctrl_c() {
 
 voxy () {
      if [ $PREVOX -eq 1 ]; then
-          play -V1 -n -c1 synth .2 sine 70 #time and tone to activate vox are radio dependent
-          #play -n -c1 synth .2 brownnoise
+          play -V1 -n -c1 synth .4 sine 179.9 #time and tone to activate vox are radio dependent
+          #play -n -c1 synth .4 brownnoise
      fi
 }
 
@@ -364,7 +369,7 @@ dtmfactions () {
                return
           fi
           if [ $1 = "#4" ]; then
-               espeak "This parrot has been `uptime -p | sed "s/^up /squawking for /g" |sed "s/,/ and/"`"
+               espeak "This parrot has been `uptime -p | sed "s/^up /squawking for /g"`"
                return
           fi
           if [ $1 = "#73" ]; then
@@ -450,7 +455,17 @@ while [ 1 ]; do
           echo "#-------------------------------"
           echo "# WAITING FOR AUDIO INPUT:"
           echo "#-------------------------------"
-          rec -V1 -c1 recording.wav rate 64k silence 1 0.1 1% 1 3.0 1% trim 0 30
+          rec -V1 -c1 recording.wav rate 64k silence 1 0.1 1% 1 3.0 1% trim 0 $TIMEOUT
+
+          # Potential command for pass-through for duplex repeater
+          # while still recording a wav for scandtmf to check and
+          # still enforcing the transmit timeout.
+          # Some latency dependent on computer, but basically live.
+          # Making the mic hot in alsa or pulse would have
+          # less latency but other issues.
+          # 
+          #rec -V1 -c1 -t wav - rate 64k silence 1 0.1 1% 1 3.0 1% trim 0 $TIMEOUT |tee recording.wav |play -t wav -
+
           if [ $DTMFCONTROLS -eq 1 ]; then
                scandtmf
           fi
@@ -466,7 +481,7 @@ while [ 1 ]; do
                     if [ $SAVERECS = 1 ]; then
                          #If you decided to save the recordings
                          TIMESTAMP=$(date)
-                         mv recording.wav "./$TIMESTAMP.wav" #moving a file on the smae filesystem is fast and cheap
+                         mv recording.wav "./$TIMESTAMP.wav" #moving a file on the same filesystem is fast and cheap
                          (ffmpeg -loglevel quiet -i "./$TIMESTAMP.wav" "./$TIMESTAMP.ogg"; rm "./$TIMESTAMP.wav") & #Takes time. Do in background
                     else 
                          rm recording.wav #cleanup before restarting loop
