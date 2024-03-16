@@ -179,7 +179,7 @@ PARROT=1
 PREVOX=1
 SAVERECS=0
 
-CALLSIGN="YOURCALLSIGN"
+CALLSIGN="W1SDC"
 IDLOOPING=1
 CALLSIGN_SPEAK=1
 CALLSIGN_MORSE=0
@@ -202,6 +202,14 @@ TIMEOUT=120
 
 trap ctrl_c INT
 
+function speak() {
+     # on OSX:
+     say -v Alex "$1"
+
+     # elsewhere:
+     # espeak "$1"
+}
+
 function ctrl_c() {
           voxy
           if test -f "./recording.wav"; then
@@ -211,7 +219,7 @@ function ctrl_c() {
           echo "#-------------------------------"
           echo "# Terminating the simplex Parrot"
           echo "#-------------------------------"
-          espeak "Terminating the simplex parrot"
+          speak "Terminating the simplex parrot"
 
           #-------------------------------------------
           # Kill the parrot and its parent process
@@ -225,7 +233,8 @@ function ctrl_c() {
           # to shut down Linux/Pi computer completely.
           #-------------------------------------------
 
-          kill -9 $PPID
+          exit
+          # kill -9 $PPID
           #shutdown -h now
 }
 
@@ -250,7 +259,7 @@ function ctrl_c() {
 voxy () {
      if [ $PREVOX -eq 1 ]; then
           play -V1 -n -c1 synth .4 sine 179.9 #time and tone to activate vox are radio dependent
-          #play -n -c1 synth .4 brownnoise
+          # play -n -c1 synth .4 brownnoise
      fi
 }
 
@@ -338,28 +347,28 @@ dtmfactions () {
           echo "#-------------------------------"
           echo "# Received DTMF Command: $1"
           echo "#-------------------------------"
-          espeak "Received D T M F Command: $(echo $1| sed -e 's/\(.\)/\1 /g')"
+          speak "Received D T M F Command: $(echo $1| sed -e 's/\(.\)/\1 /g')"
           if [ $1 = "#0" ]; then
-               espeak "The DTMF commands are"
-               espeak "#0 for help"
-               espeak "#1 for date and time"
-               espeak "#2 will toggle saving recordings"
-               espeak "#3 Weather report"
-               espeak "#4 Repeater controller uptime"
-               espeak "#73 to terminate the simplex parrot"
-               espeak "#99 to toggle the audio parrot"
+               speak "The DTMF commands are"
+               speak "#0 for help"
+               speak "#1 for date and time"
+               speak "#2 will toggle saving recordings"
+               speak "#3 Weather report"
+               speak "#4 Repeater controller uptime"
+               speak "#73 to terminate the simplex parrot"
+               speak "#99 to toggle the audio parrot"
                return
           fi
           if [ $1 = "#1" ]; then
-               espeak "`date +"%A, %B %d, %Y, %I:%M %p"`"
+               speak "`date +"%A, %B %d, %Y, %I:%M %p"`"
                return
           fi
           if [ $1 = "#2" ]; then
                if [ $SAVERECS -eq 1 ]; then
-                    espeak "Recordings will not be saved."
+                    speak "Recordings will not be saved."
                     SAVERECS=0
                else
-                    espeak "Recordings will be saved."
+                    speak "Recordings will be saved."
                     SAVERECS=1
                fi 
                return
@@ -369,7 +378,7 @@ dtmfactions () {
                return
           fi
           if [ $1 = "#4" ]; then
-               espeak "This parrot has been `uptime -p | sed "s/^up /squawking for /g"`"
+               speak "This parrot has been `uptime -p | sed "s/^up /squawking for /g"`"
                return
           fi
           if [ $1 = "#73" ]; then
@@ -378,15 +387,15 @@ dtmfactions () {
           fi
           if [ $1 = "#99" ]; then
                if [ $PARROT -eq 1 ]; then
-                    espeak "Parrot will now be silent."
+                    speak "Parrot will now be silent."
                     PARROT=0
                else
-                    espeak "Parrot will now repeat traffic."
+                    speak "Parrot will now repeat traffic."
                     PARROT=1
                fi 
                return
           fi
-          espeak "No such code. Send D T M F Code #0 for help." #should say if no matching DTMF code
+          speak "No such code. Send D T M F Code #0 for help." #should say if no matching DTMF code
      fi
 }
 
@@ -394,7 +403,7 @@ dtmfactions () {
 # function for a received DTMF command.
 # DTMF Command "#3"
 theweather () {
-     espeak "`ansiweather -p false -a false -s false -l "Kalamazoo, MI" -u imperial |tr "-" "\n" \
+     speak "`ansiweather -p false -a false -s false -l "Kalamazoo, MI" -u imperial |tr "-" "\n" \
      |tr "=>" "\n" |sed -e 's/°F/degrees/g' |sed -e 's/mph/miles per hour/g' |sed -e 's/$/./'`"
      return
 }
@@ -426,7 +435,7 @@ while [ $IDLOOPING -eq 1 ]; do
                voxy
           fi
           if [ $CALLSIGN_SPEAK -eq 1 ]; then
-               espeak "This is simplex repeater $(natophonetics $CALLSIGN) / R" &
+               speak "This is simplex repeater $(natophonetics $CALLSIGN) / R" &
           fi
           if [ $CALLSIGN_MORSE -eq 1 ]; then
                echo "$CALLSIGN/R" |$MORSEPROG &
