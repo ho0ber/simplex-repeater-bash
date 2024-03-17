@@ -233,8 +233,8 @@ function ctrl_c() {
           # to shut down Linux/Pi computer completely.
           #-------------------------------------------
 
-          exit
-          # kill -9 $PPID
+          # exit
+          kill -9 $PPID
           #shutdown -h now
 }
 
